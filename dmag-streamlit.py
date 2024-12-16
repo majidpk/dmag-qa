@@ -57,10 +57,9 @@ if 'loading' not in st.session_state:
     st.session_state.loading = True
 
 # Loading spinner
-qa_chain = None
 if st.session_state.loading:
     with st.spinner("Something is loading..."):
-        qa_chain = initialize()
+        st.session_state.qa_chain = initialize()
     st.session_state.loading = False
 
 # Input box for the question
@@ -73,7 +72,7 @@ with col1:
     if st.button("جواب بده"):
         if question.strip():
             # Simulating a response and reference (replace with your logic)
-            answer = qa_chain.run(question.strip())
+            answer = st.session_state.qa_chain.run(question.strip())
             st.session_state.answer = answer
             st.session_state.reference_url = get_reference_url(question.strip())
             st.session_state.question = question
