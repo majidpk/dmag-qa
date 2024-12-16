@@ -57,6 +57,7 @@ if 'loading' not in st.session_state:
     st.session_state.loading = True
 
 # Loading spinner
+qa_chain = None
 if st.session_state.loading:
     with st.spinner("Something is loading..."):
         qa_chain = initialize()
