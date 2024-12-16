@@ -74,7 +74,7 @@ with col1:
             # Simulating a response and reference (replace with your logic)
             answer = st.session_state.qa_chain.run(question.strip())
             st.session_state.answer = answer
-            st.session_state.reference_url = get_reference_url(question.strip())
+            st.session_state.reference_url = "" #get_reference_url(question.strip())
             st.session_state.question = question
         else:
             st.warning("متنی بعنوان سوال بنویسید.")
