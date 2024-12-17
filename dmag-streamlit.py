@@ -63,7 +63,7 @@ if st.session_state.loading:
     st.session_state.loading = False
 
 # Input box for the question
-question = st.text_input("درباره مقالات دقیقه سوال بپرس:", st.session_state.question, placeholder="میزان کشته های تصادفات جاده ای ایران در سال 1402 چقدر بوده؟")
+question = st.text_input("درباره 100 مقاله اخیر مجله دقیقه سوال بپرس:", st.session_state.question, placeholder="میزان کشته های تصادفات جاده ای ایران در سال 1402 چقدر بوده؟")
 
 # Buttons for execution and clearing
 col1, col2 = st.columns(2)
