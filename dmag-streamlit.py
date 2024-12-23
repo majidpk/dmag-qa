@@ -9,6 +9,10 @@ from langchain.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
+from langchain_core.runnables import chain
+from langchain_core.documents import Document
+from typing import List
+from langchain_core.runnables import RunnablePassthrough
 
 # Function to initialize the QA chain and retriever
 @st.cache_resource
@@ -18,7 +22,7 @@ def initialize_qa_chain():
     vector_store = Chroma(persist_directory=persist_directory, embedding_function=embedding_model)
 
     # Set up the retriever
-    retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+    retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 10})
 
     # Initialize OpenAI LLM
     avalai_api = "aa-Qtp7NPuYMqOGnAWUwZR5rxruRPGrYohBbRBhJZC3srcWW7Xc"
@@ -40,6 +44,18 @@ def initialize_qa_chain():
         llm=openai_llm,
         retriever=retriever,
         chain_type_kwargs={"prompt": PROMPT}
+    )
+
+    def format_docs(docs):
+        return "\n\n".join(doc.page_content for doc in docs)
+    
+    qa_chain = (
+        {
+            "context": retriever | format_docs,
+            "question": RunnablePassthrough(),
+        }
+        | PROMPT
+        | openai_llm
     )
 
     return qa_chain, retriever
@@ -73,19 +89,21 @@ col1, col2 = st.columns(2)
 
 with col1:
     if st.button("جواب بده"):
-        if question.strip():
+        qq = question.strip()
+        if qq:
             # Retrieve documents with similarity scores
-            retrieved_docs = retriever.get_relevant_documents(question.strip())
-
+            #retrieved_docs = retriever.get_relevant_documents(qq)
+            retrieved_docs = retriever.vectorstore.similarity_search_with_score(qq)
+        
             # Format the retrieved documents and similarity scores
             top_docs = "\n".join(
-                [f"Score: {doc.metadata.get('score', 'N/A')}\nContent: {doc.page_content}\n" for doc in retrieved_docs]
+                [f"Score: {doc[1]}\nContent: {doc[0].page_content}\nLink: {doc[0].metadata['url']}\n" for doc in retrieved_docs]
             )
             st.session_state.top_docs = top_docs
 
             # Run the QA chain to get the answer
-            answer = qa_chain.run(question.strip())
-            st.session_state.answer = answer
+            answer = qa_chain.invoke(qq)
+            st.session_state.answer = answer.content
             st.session_state.question = question
         else:
             st.warning("متنی بعنوان سوال بنویسید.")
