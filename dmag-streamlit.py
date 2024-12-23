@@ -10,7 +10,7 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 
-# Function to initialize the QA chain
+# Function to initialize the QA chain and retriever
 @st.cache_resource
 def initialize_qa_chain():
     persist_directory = "./vectordb"
@@ -42,20 +42,22 @@ def initialize_qa_chain():
         chain_type_kwargs={"prompt": PROMPT}
     )
 
-    return qa_chain
+    return qa_chain, retriever
 
 
 # Streamlit app title
 st.title("از من بپرس: مجله دقیقه")
 
-# Initialize the cached QA chain
-qa_chain = initialize_qa_chain()
+# Initialize the cached QA chain and retriever
+qa_chain, retriever = initialize_qa_chain()
 
 # Session state to manage inputs and outputs
 if 'question' not in st.session_state:
     st.session_state.question = ""
 if 'answer' not in st.session_state:
     st.session_state.answer = ""
+if 'top_docs' not in st.session_state:
+    st.session_state.top_docs = ""
 if 'reference_url' not in st.session_state:
     st.session_state.reference_url = ""
 
@@ -72,10 +74,18 @@ col1, col2 = st.columns(2)
 with col1:
     if st.button("جواب بده"):
         if question.strip():
+            # Retrieve documents with similarity scores
+            retrieved_docs = retriever.get_relevant_documents(question.strip())
+
+            # Format the retrieved documents and similarity scores
+            top_docs = "\n".join(
+                [f"Score: {doc.metadata.get('score', 'N/A')}\nContent: {doc.page_content}\n" for doc in retrieved_docs]
+            )
+            st.session_state.top_docs = top_docs
+
             # Run the QA chain to get the answer
             answer = qa_chain.run(question.strip())
             st.session_state.answer = answer
-            st.session_state.reference_url = ""  # Placeholder for a reference URL logic
             st.session_state.question = question
         else:
             st.warning("متنی بعنوان سوال بنویسید.")
@@ -84,9 +94,14 @@ with col2:
     if st.button("پاک کن"):
         st.session_state.question = ""
         st.session_state.answer = ""
+        st.session_state.top_docs = ""
         st.session_state.reference_url = ""
 
-# Display the answer and reference if available
+# Display the retrieved documents with similarity scores
+if st.session_state.top_docs:
+    st.text_area("مقالات مرتبط و امتیاز شباهت:", st.session_state.top_docs, height=300)
+
+# Display the answer
 if st.session_state.answer:
     st.text_area("پاسخ:", st.session_state.answer, height=100)
     if st.session_state.reference_url:
